@@ -2,133 +2,160 @@
 /*
 Plugin Name: Single Post Template
 Plugin URI: http://www.nathanrice.net/plugins
+
 Description: This plugin allows theme authors to include single post templates, much like a theme author can use page template files.
-Version: 1.3
+
 Author: Nathan Rice
 Author URI: http://www.nathanrice.net/
 
-This plugin inherits the GPL license from it's parent system, WordPress.
+Version: 1.4
+
+License: GNU General Public License v2.0
+License URI: http://www.opensource.org/licenses/gpl-license.php
 */
 
-//	This function scans the template files of the active theme, 
-//	and returns an array of [Template Name => {file}.php]
-if(!function_exists('get_post_templates')) {
-function get_post_templates() {
-	$themes = get_themes();
-	$theme = get_current_theme();
-	$templates = $themes[$theme]['Template Files'];
-	$post_templates = array();
+class Single_Post_Template_Plugin {
 
-	$base = array(trailingslashit(get_template_directory()), trailingslashit(get_stylesheet_directory()));
+	function __construct() {
 
-	foreach ((array)$templates as $template) {
-		$template = WP_CONTENT_DIR . str_replace(WP_CONTENT_DIR, '', $template); 
-		$basename = str_replace($base, '', $template);
+		//** Do nothing if Genesis is active
+		if ( function_exists( 'genesis' ) )
+			return;
 
-		// don't allow template files in subdirectories
-		if (false !== strpos($basename, '/'))
-			continue;
+		add_action( 'admin_menu', array( $this, 'add_metabox' ) );
+		add_action( 'save_post', array( $this, 'metabox_save' ), 1, 2 );
 
-		$template_data = implode('', file( $template ));
+	}
 
-		$name = '';
-		if (preg_match( '|Single Post Template:(.*)$|mi', $template_data, $name))
-			$name = _cleanup_header_comment($name[1]);
+	function get_post_template() {
 
-		if (!empty($name)) {
-			if(basename($template) != basename(__FILE__))
-				$post_templates[trim($name)] = $basename;
+		global $post;
+
+		$custom_field = get_post_meta( $post->ID, '_wp_post_template', true );
+
+		if( ! $custom_field )
+			return $template;
+
+		/** Prevent directory traversal */
+		$custom_field = str_replace( '..', '', $custom_field );
+
+		if( file_exists( get_stylesheet_directory() . "/{$custom_field}" ) )
+			$template = get_stylesheet_directory() . "/{$custom_field}";
+		elseif( file_exists( get_template_directory() . "/{$custom_field}" ) )
+			$template = get_template_directory() . "/{$custom_field}";
+
+		return $template;
+
+	}
+
+	function get_post_templates() {
+
+		$templates = wp_get_theme()->get_files( 'php', 1 );
+		$post_templates = array();
+
+		$base = array( trailingslashit( get_template_directory() ), trailingslashit( get_stylesheet_directory() ) );
+
+		foreach ( (array) $templates as $file => $full_path ) {
+
+			if ( ! preg_match( '|Single Post Template:(.*)$|mi', file_get_contents( $full_path ), $header ) )
+				continue;
+
+			$post_templates[ $file ] = _cleanup_header_comment( $header[1] );
+
 		}
+
+		return $post_templates;
+
 	}
 
-	return $post_templates;
+	function post_templates_dropdown() {
 
-}}
+		global $post;
 
-//	build the dropdown items
-if(!function_exists('post_templates_dropdown')) {
-function post_templates_dropdown() {
-	global $post;
-	$post_templates = get_post_templates();
-	
-	foreach ($post_templates as $template_name => $template_file) { //loop through templates, make them options
-		if ($template_file == get_post_meta($post->ID, '_wp_post_template', true)) { $selected = ' selected="selected"'; } else { $selected = ''; }
-		$opt = '<option value="' . $template_file . '"' . $selected . '>' . $template_name . '</option>';
-		echo $opt;
-	}
-}}
+		$post_templates = get_post_templates();
 
-//	Filter the single template value, and replace it with
-//	the template chosen by the user, if they chose one.
-add_filter('single_template', 'get_post_template');
-if(!function_exists('get_post_template')) {
-function get_post_template($template) {
-	global $post;
-	$custom_field = get_post_meta($post->ID, '_wp_post_template', true);
-	if(!empty($custom_field) && file_exists(TEMPLATEPATH . "/{$custom_field}")) { 
-		$template = TEMPLATEPATH . "/{$custom_field}"; }
-	return $template;
-}}
-
-//	Everything below this is for adding the extra box
-//	to the post edit screen so the user can choose a template
-
-//	Adds a custom section to the Post edit screen
-add_action('admin_menu', 'pt_add_custom_box');
-function pt_add_custom_box() {
-	if(get_post_templates() && function_exists( 'add_meta_box' )) {
-		add_meta_box( 'pt_post_templates', __( 'Single Post Template', 'pt' ), 
-			'pt_inner_custom_box', 'post', 'normal', 'high' ); //add the boxes under the post
-	}
-}
-   
-//	Prints the inner fields for the custom post/page section
-function pt_inner_custom_box() {
-	global $post;
-	// Use nonce for verification
-	echo '<input type="hidden" name="pt_noncename" id="pt_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
-	// The actual fields for data entry
-	echo '<label class="hidden" for="post_template">' . __("Post Template", 'pt' ) . '</label><br />';
-	echo '<select name="_wp_post_template" id="post_template" class="dropdown">';
-	echo '<option value="">Default</option>';
-	post_templates_dropdown(); //get the options
-	echo '</select><br /><br />';
-	echo '<p>' . __("Some themes have custom templates you can use for single posts that might have additional features or custom layouts. If so, you’ll see them above.", 'pt' ) . '</p><br />';
-}
-
-//	When the post is saved, saves our custom data
-add_action('save_post', 'pt_save_postdata', 1, 2); // save the custom fields
-function pt_save_postdata($post_id, $post) {
-	
-	// verify this came from the our screen and with proper authorization,
-	// because save_post can be triggered at other times
-	if ( !wp_verify_nonce( $_POST['pt_noncename'], plugin_basename(__FILE__) )) {
-	return $post->ID;
-	}
-
-	// Is the user allowed to edit the post or page?
-	if ( 'page' == $_POST['post_type'] ) {
-		if ( !current_user_can( 'edit_page', $post->ID ))
-		return $post->ID;
-	} else {
-		if ( !current_user_can( 'edit_post', $post->ID ))
-		return $post->ID;
-	}
-
-	// OK, we're authenticated: we need to find and save the data
-	
-	// We'll put the data into an array to make it easier to loop though and save
-	$mydata['_wp_post_template'] = $_POST['_wp_post_template'];
-	// Add values of $mydata as custom fields
-	foreach ($mydata as $key => $value) { //Let's cycle through the $mydata array!
-		if( $post->post_type == 'revision' ) return; //don't store custom data twice
-		$value = implode(',', (array)$value); //if $value is an array, make it a CSV (unlikely)
-		if(get_post_meta($post->ID, $key, FALSE)) { //if the custom field already has a value...
-			update_post_meta($post->ID, $key, $value); //...then just update the data
-		} else { //if the custom field doesn't have a value...
-			add_post_meta($post->ID, $key, $value);//...then add the data
+		/** Loop through templates, make them options */
+		foreach ( $post_templates as $template_file => $template_name ) {
+			$selected = ( $template_file == get_post_meta( $post->ID, '_wp_post_template', true ) ) ? ' selected="selected"' : '';
+			$opt = '<option value="' . esc_attr( $template_file ) . '"' . $selected . '>' . esc_html( $template_name ) . '</option>';
+			echo $opt;
 		}
-		if(!$value) delete_post_meta($post->ID, $key); //and delete if blank
+
 	}
+
+	function add_metabox() {
+
+		if ( get_post_templates() )
+			add_meta_box( 'pt_post_templates', __( 'Single Post Template', 'genesis' ), 'pt_inner_custom_box', 'post', 'normal', 'high' );
+
+	}
+
+	function metabox() {
+
+		global $post;
+		?>
+		<input type="hidden" name="pt_noncename" id="pt_noncename" value="<?php echo wp_create_nonce( plugin_basename( __FILE__ ) ); ?>" />
+
+		<label class="hidden" for="post_template"><?php  _e( 'Post Template', 'genesis' ); ?></label><br />
+		<select name="_wp_post_template" id="post_template" class="dropdown">
+			<option value=""><?php _e( 'Default', 'genesis' ); ?></option>
+			<?php post_templates_dropdown(); ?>
+		</select><br /><br />
+		<p><?php _e( 'Some themes have custom templates you can use for single posts that might have additional features or custom layouts. If so, you will see them above.', 'genesis' ); ?></p>
+		<?php
+
+	}
+
+	function metabox_save( $post_id, $post ) {
+
+		/*
+		 * Verify this came from the our screen and with proper authorization,
+		 * because save_post can be triggered at other times
+		 */
+		if ( ! wp_verify_nonce( $_POST['pt_noncename'], plugin_basename( __FILE__ ) ) )
+			return $post->ID;
+
+		/** Is the user allowed to edit the post or page? */
+		if ( 'page' == $_POST['post_type'] )
+			if ( ! current_user_can( 'edit_page', $post->ID ) )
+				return $post->ID;
+		else
+			if ( ! current_user_can( 'edit_post', $post->ID ) )
+				return $post->ID;
+
+		/** OK, we're authenticated: we need to find and save the data */
+
+		/** Put the data into an array to make it easier to loop though and save */
+		$mydata['_wp_post_template'] = $_POST['_wp_post_template'];
+
+		/** Add values of $mydata as custom fields */
+		foreach ( $mydata as $key => $value ) {
+			/** Don't store custom data twice */
+			if( 'revision' == $post->post_type )
+				return;
+
+			/** If $value is an array, make it a CSV (unlikely) */
+			$value = implode( ',', (array) $value );
+
+			/** Update the data if it exists, or add it if it doesn't */
+			if( get_post_meta( $post->ID, $key, false ) )
+				update_post_meta( $post->ID, $key, $value );
+			else
+				add_post_meta( $post->ID, $key, $value );
+
+			/** Delete if blank */
+			if( ! $value )
+				delete_post_meta( $post->ID, $key );
+		}
+
+	}
+
 }
-?>
+
+add_action( 'after_setup_theme', 'post_templates_plugin_init' );
+/**
+ * Instantiate the class after theme has been set up.
+ */
+function post_templates_plugin_init() {
+	new Single_Post_Template_Plugin;
+}
