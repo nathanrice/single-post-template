@@ -30,11 +30,15 @@ Description: This part is optional, but helpful for describing the Post Template
 ?>
 ```
 
-*See Screenshot #1 for what this might look like in your code editor*
+*Screenshot #1 shows what this might look like in your code editor*
+
+![Single Post Template Header](screenshot-1.png "Single Post Template Header")
 
 Once you have created a new Post Template, either edit or create a new post, and directly underneath the post content box, you should see a new box labeled "Single Post Template". Choose the Post Template you want to use and publish or update the post.
 
-*See Screenshot #2 for what this might look like in your post edit screen*
+*Screenshot #2 shows what this might look like in your post edit screen*
+
+![Single Post Editor](screenshot-2.png "Single Post Editor")
 
 ## Frequently Asked Questions
 
