@@ -1,17 +1,13 @@
 <?php
 /*
-Plugin Name: Single Post Template
-Plugin URI: http://www.nathanrice.net/plugins
-
-Description: This plugin allows theme authors to include single post templates, much like a theme author can use page template files.
-
-Author: Nathan Rice
-Author URI: http://www.nathanrice.net/
-
-Version: 1.4
-
-License: GNU General Public License v2.0
-License URI: http://www.opensource.org/licenses/gpl-license.php
+ * Plugin Name: Single Post Template
+ * Plugin URI: http://www.nathanrice.net/plugins
+ * Description: This plugin allows theme authors to include single post templates, much like a theme author can use page template files.
+ * Author: Nathan Rice
+ * Author URI: http://www.nathanrice.net/
+ * Version: 1.4
+ * License: GNU General Public License v2.0
+ * License URI: http://www.opensource.org/licenses/gpl-license.php
 */
 
 class Single_Post_Template_Plugin {
