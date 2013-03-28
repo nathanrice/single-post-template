@@ -90,9 +90,8 @@ class Single_Post_Template_Plugin {
 
 	}
 
-	function metabox() {
+	function metabox( $post ) {
 
-		global $post;
 		?>
 		<input type="hidden" name="pt_noncename" id="pt_noncename" value="<?php echo wp_create_nonce( plugin_basename( __FILE__ ) ); ?>" />
 
