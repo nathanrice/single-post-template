@@ -1,7 +1,4 @@
-single-post-template
-====================
-
-=== Single Post Template ===
+=== Plugin Name ===
 Contributors: nathanrice
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5553118
 Tags: single posts, post templates, single post templates
