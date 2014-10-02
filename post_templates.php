@@ -111,6 +111,9 @@ class Single_Post_Template_Plugin {
 		 * Verify this came from the our screen and with proper authorization,
 		 * because save_post can be triggered at other times
 		 */
+		if ( !isset($_POST['pt_noncename']) )
+			return $post->ID;
+		 
 		if ( ! wp_verify_nonce( $_POST['pt_noncename'], plugin_basename( __FILE__ ) ) )
 			return $post->ID;
 
