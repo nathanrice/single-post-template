@@ -8,7 +8,7 @@ Description: This plugin allows theme authors to include single post templates, 
 Author: Nathan Rice
 Author URI: http://www.nathanrice.net/
 
-Version: 1.4
+Version: 1.4.4
 
 License: GNU General Public License v2.0
 License URI: http://www.opensource.org/licenses/gpl-license.php
@@ -18,16 +18,14 @@ class Single_Post_Template_Plugin {
 
 	function __construct() {
 
-		//** Do nothing if Genesis is active
-		if ( function_exists( 'genesis' ) )
-			return;
-
 		add_action( 'admin_menu', array( $this, 'add_metabox' ) );
 		add_action( 'save_post', array( $this, 'metabox_save' ), 1, 2 );
 
+		add_filter( 'single_template', array( $this, 'get_post_template' ) );
+
 	}
 
-	function get_post_template() {
+	function get_post_template( $template ) {
 
 		global $post;
 
@@ -72,10 +70,10 @@ class Single_Post_Template_Plugin {
 
 		global $post;
 
-		$post_templates = get_post_templates();
+		$post_templates = $this->get_post_templates();
 
 		/** Loop through templates, make them options */
-		foreach ( $post_templates as $template_file => $template_name ) {
+		foreach ( (array) $post_templates as $template_file => $template_name ) {
 			$selected = ( $template_file == get_post_meta( $post->ID, '_wp_post_template', true ) ) ? ' selected="selected"' : '';
 			$opt = '<option value="' . esc_attr( $template_file ) . '"' . $selected . '>' . esc_html( $template_name ) . '</option>';
 			echo $opt;
@@ -85,8 +83,8 @@ class Single_Post_Template_Plugin {
 
 	function add_metabox() {
 
-		if ( get_post_templates() )
-			add_meta_box( 'pt_post_templates', __( 'Single Post Template', 'genesis' ), 'pt_inner_custom_box', 'post', 'normal', 'high' );
+		if ( $this->get_post_templates() )
+			add_meta_box( 'pt_post_templates', __( 'Single Post Template', 'genesis' ), array( $this, 'metabox' ), 'post', 'normal', 'high' );
 
 	}
 
@@ -98,7 +96,7 @@ class Single_Post_Template_Plugin {
 		<label class="hidden" for="post_template"><?php  _e( 'Post Template', 'genesis' ); ?></label><br />
 		<select name="_wp_post_template" id="post_template" class="dropdown">
 			<option value=""><?php _e( 'Default', 'genesis' ); ?></option>
-			<?php post_templates_dropdown(); ?>
+			<?php $this->post_templates_dropdown(); ?>
 		</select><br /><br />
 		<p><?php _e( 'Some themes have custom templates you can use for single posts that might have additional features or custom layouts. If so, you will see them above.', 'genesis' ); ?></p>
 		<?php

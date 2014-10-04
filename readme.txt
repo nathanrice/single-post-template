@@ -2,9 +2,9 @@
 Contributors: nathanrice
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5553118
 Tags: single posts, post templates, single post templates
-Requires at least: 2.8
-Tested up to: 2.9
-Stable tag: 1.3
+Requires at least: 3.5
+Tested up to: 3.6
+Stable tag: 1.4.4
 
 Single Post Template adds the ability for your theme to include "Post Templates" in much the same way you can add "Page Templates", allowing you to choose (via a simple dropdown) which post template you want to use, on a per-post basis.
 
@@ -88,3 +88,19 @@ Bug reports are, of course, appreciated and cost you nothing. I will try to make
 * Copied methodology of WordPress [get_page_templates()](http://xref.yoast.com/trunk/_functions/get_page_templates.html) function
 * Added 2.9 compatibility
 * Ensured 2.8 backward compatibility
+
+== 1.4 ==
+* Compatibility with up to WordPress 3.6
+* Build a class for better namespacing and to avoid conflicts with Genesis
+
+== 1.4.1 ==
+* Fix admin bug
+
+== 1.4.2 ==
+* Fix bugs, feel sorry for myself
+
+== 1.4.3 ==
+* Fix another bug, loathe myself
+
+== 1.4.4 ==
+* Fix issue with default template not loading
